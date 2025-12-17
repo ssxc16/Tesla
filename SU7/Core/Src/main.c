@@ -29,6 +29,7 @@
 #include "control.h"
 #include "led.h"
 #include "buzzer.h"
+#include "ir_follow.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,7 +57,7 @@ TIM_HandleTypeDef htim5;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-uint8_t SU7Running = 0;
+uint8_t SU7Running = 1;
 int16_t wayi = 0;
 uint8_t rx_data = 0;
 /* USER CODE END PV */
@@ -132,6 +133,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+  IRFollow_Init();
   set_bluetooth_huart(&huart2);
   start_bluetooth_IT();
   // htim2: sonic wave reflection timer
@@ -165,8 +167,9 @@ int main(void)
   /* Infinite loop */
     /* USER CODE BEGIN WHILE */
     CarCmd cmd;
-    while (1)
+  while (1)
     {
+//	  Sensor_Static_Test();
       /* USER CODE END WHILE */
 
       /* USER CODE BEGIN 3 */
@@ -211,9 +214,27 @@ int main(void)
 
       // HAL_Delay(100); // 防抖延时
 
+	  uint16_t safe_check = 0;
+	  if (dequeue_cmd(&cmd)){
+		  switch (cmd.type) {
+		      case 100:
+		    	  su7mode = CONTROL_MODE;
+		    	  break;
+		      case 200:
+		    	  su7mode = IR_FOLLOW_MODE;
+		    	  break;
+		      default:
+		    	  safe_check = 1;
+		          break;
+		  }
+	  }
+  if (su7mode == IR_FOLLOW_MODE) {
+    // 红外跟随模式：运行跟随循环
+    IRTrack_Loop();
+    continue; // 本轮不再处理命令队列
+  }
 
-
-    if (dequeue_cmd(&cmd)) {
+  if (safe_check) {
     // 参数范围校验，防止异常值导致危险
     uint16_t safe_dist = (cmd.value > 1000) ? 1000 : (cmd.value); // 最大1米
     uint16_t safe_angle = (cmd.value > 180) ? 180 : (cmd.value);  // 最大180度
@@ -770,15 +791,29 @@ uint8_t set_auto_race_mode(){
     return 0x00;
   }
 }
+uint8_t set_ir_follow_mode(){
+  if (SU7Running) {
+    return 0xf1;
+  } else {
+    su7mode = IR_FOLLOW_MODE;
+    return 0x00;
+  }
+}
 void start_mode(){
   wayi = 0;
   SU7Running = 1;
   
   control_init();
+  if (su7mode == IR_FOLLOW_MODE) {
+    IRFollow_Enable(1);
+  }
 }
 void end_mode() {
   SU7Running = 0;
   MOTOR_STOP();
+  if (su7mode == IR_FOLLOW_MODE) {
+    IRFollow_Enable(0);
+  }
 }
 void toggle_mode() {
   if (SU7Running) {
@@ -787,6 +822,56 @@ void toggle_mode() {
     start_mode();
   }
 }
+
+void Sensor_Static_Test(void)
+{
+    // 1. 安全第一：先强制停止所有电机
+    MOTOR_STOP();
+
+    // 2. 提示测试开始：LED闪烁两次
+    for(int i=0; i<2; i++) {
+        HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET); // 亮
+        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+        HAL_Delay(200);
+        HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_SET);   // 灭
+        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+        HAL_Delay(200);
+    }
+
+    // 3. 进入死循环测试
+    while(1)
+    {
+        // --- 测试左传感器 (应该接在 P5/PB5) ---
+        // 传感器逻辑：有障碍物 = 低电平(RESET)
+        if (HAL_GPIO_ReadPin(AVOID_LEFT_GPIO_Port, AVOID_LEFT_Pin) == GPIO_PIN_RESET)
+        {
+            // 检测到障碍物 -> 点亮 LED0
+            // 注意：通常LED是低电平点亮，如果反了就改一下 SET/RESET
+            HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET);
+        }
+        else
+        {
+            // 没检测到 -> 熄灭 LED0
+            HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_SET);
+        }
+
+        // --- 测试右传感器 (应该接在 P1/PB4) ---
+        // 传感器逻辑：有障碍物 = 低电平(RESET)
+        if (HAL_GPIO_ReadPin(AVOID_RIGHT_GPIO_Port, AVOID_RIGHT_Pin) == GPIO_PIN_RESET)
+        {
+            // 检测到障碍物 -> 点亮 LED1
+            HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+        }
+        else
+        {
+            // 没检测到 -> 熄灭 LED1
+            HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+        }
+
+        HAL_Delay(10); // 短延时，防抖动
+    }
+}
+
 /* USER CODE END 4 */
 
 /**

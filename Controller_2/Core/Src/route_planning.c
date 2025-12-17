@@ -129,6 +129,9 @@ void RoutePlanning_Execute(void)
     if(fit_count < 2) return;
     float curr_angle = 90.0f; // 初始车头朝y轴正方向
     char txbuf[32];
+    sprintf(txbuf, "$100,%d#", 0);
+    HAL_UART_Transmit(&huart2, (uint8_t*)txbuf, strlen(txbuf), 100);
+    HAL_Delay(100);
 
     for(uint16_t i=1; i<fit_count; i++) {
         RoutePoint p0 = fit_points[i-1];

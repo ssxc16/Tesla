@@ -1,0 +1,6 @@
+../Core/Src/screen.c:255:6:Display_ConnectionStatus	16	static
+../Core/Src/screen.c:266:6:Display_ShowMainMenu	72	static
+../Core/Src/screen.c:300:6:Display_ShowSubMenu	16	static
+../Core/Src/screen.c:307:6:Display_RoutePlanning	24	static
+../Core/Src/screen.c:132:6:rtp_test	88	static
+../Core/Src/screen.c:335:6:Display_ShowMessage	16	static

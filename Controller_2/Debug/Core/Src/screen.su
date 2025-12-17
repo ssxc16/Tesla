@@ -1,6 +1,10 @@
-../Core/Src/screen.c:24:6:rtp_test	24	static
-../Core/Src/screen.c:131:6:Display_ConnectionStatus	24	static
-../Core/Src/screen.c:142:6:Display_ShowMainMenu	48	static
-../Core/Src/screen.c:176:6:Display_ShowSubMenu	24	static
-../Core/Src/screen.c:183:6:Display_RoutePlanning	16	static
-../Core/Src/screen.c:211:6:Display_ShowMessage	24	static
+../Core/Src/screen.c:42:13:IR_MapToCanvas	32	static
+../Core/Src/screen.c:52:13:IR_UartPollAndParse	32	static
+../Core/Src/screen.c:97:13:Display_InfraFollow	48	static
+../Core/Src/screen.c:121:13:InfraFollow_Handle	8	static
+../Core/Src/screen.c:132:6:rtp_test	56	static
+../Core/Src/screen.c:256:6:Display_ConnectionStatus	24	static
+../Core/Src/screen.c:267:6:Display_ShowMainMenu	48	static
+../Core/Src/screen.c:301:6:Display_ShowSubMenu	24	static
+../Core/Src/screen.c:308:6:Display_RoutePlanning	16	static
+../Core/Src/screen.c:336:6:Display_ShowMessage	24	static

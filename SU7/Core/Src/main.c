@@ -29,6 +29,7 @@
 #include "control.h"
 #include "led.h"
 #include "buzzer.h"
+#include "ir_follow.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -132,6 +133,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+  IRFollow_Init();
   set_bluetooth_huart(&huart2);
   start_bluetooth_IT();
   // htim2: sonic wave reflection timer
@@ -165,7 +167,7 @@ int main(void)
   /* Infinite loop */
     /* USER CODE BEGIN WHILE */
     CarCmd cmd;
-    while (1)
+  while (1)
     {
       /* USER CODE END WHILE */
 
@@ -212,8 +214,13 @@ int main(void)
       // HAL_Delay(100); // 防抖延时
 
 
+  if (su7mode == IR_FOLLOW_MODE && SU7Running) {
+    // 红外跟随模式：运行跟随循环
+    IRTrack_Loop();
+    continue; // 本轮不再处理命令队列
+  }
 
-    if (dequeue_cmd(&cmd)) {
+  if (dequeue_cmd(&cmd)) {
     // 参数范围校验，防止异常值导致危险
     uint16_t safe_dist = (cmd.value > 1000) ? 1000 : (cmd.value); // 最大1米
     uint16_t safe_angle = (cmd.value > 180) ? 180 : (cmd.value);  // 最大180度
@@ -770,15 +777,29 @@ uint8_t set_auto_race_mode(){
     return 0x00;
   }
 }
+uint8_t set_ir_follow_mode(){
+  if (SU7Running) {
+    return 0xf1;
+  } else {
+    su7mode = IR_FOLLOW_MODE;
+    return 0x00;
+  }
+}
 void start_mode(){
   wayi = 0;
   SU7Running = 1;
   
   control_init();
+  if (su7mode == IR_FOLLOW_MODE) {
+    IRFollow_Enable(1);
+  }
 }
 void end_mode() {
   SU7Running = 0;
   MOTOR_STOP();
+  if (su7mode == IR_FOLLOW_MODE) {
+    IRFollow_Enable(0);
+  }
 }
 void toggle_mode() {
   if (SU7Running) {

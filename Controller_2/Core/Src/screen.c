@@ -110,6 +110,12 @@ static void Display_InfraFollow(void)
     POINT_COLOR = BLACK;
     // 重置轨迹缓冲
     ir_count = 0;
+
+    // 通知小车切换到 IR 跟随模式并启动
+    uint8_t cmd = 0x07; // set_ir_follow_mode
+    HAL_UART_Transmit(&huart2, &cmd, 1, 0xFFFF);
+    cmd = 0x05; // start_mode
+    HAL_UART_Transmit(&huart2, &cmd, 1, 0xFFFF);
 }
 
 static void InfraFollow_Handle(void)
@@ -216,6 +222,9 @@ void rtp_test(void)
                             if(tp_dev.x[0] >= 20 && tp_dev.x[0] <= 140 && tp_dev.y[0] >= 280 && tp_dev.y[0] <= 304) {
                                 mode = 0;
                                 Display_ShowMainMenu();
+                                // 通知小车停止当前模式
+                                uint8_t cmd = 0x06; // end_mode
+                                HAL_UART_Transmit(&huart2, &cmd, 1, 0xFFFF);
                             }
                             break;
                         

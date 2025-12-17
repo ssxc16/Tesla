@@ -66,12 +66,16 @@ void bluetooth_RxCallback()
         bluetooth_sendACK2(set_auto_race_mode());
         start_bluetooth_IT();
         break;
-    case 0x05:
+    case 0x07: // set IR follow mode
+        bluetooth_sendACK2(set_ir_follow_mode());
+        start_bluetooth_IT();
+        break;
+    case 0x05: // start current mode
         start_mode();
         bluetooth_sendACK2(0x00);
         start_bluetooth_IT();
         break;
-    case 0x06:
+    case 0x06: // stop current mode
         end_mode();
         bluetooth_sendACK2(0x00);
         start_bluetooth_IT();

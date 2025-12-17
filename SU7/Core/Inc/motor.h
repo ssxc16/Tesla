@@ -2,6 +2,7 @@
 #define _MOTOR_H_
 
 #include "main.h"
+#include <stdint.h>
 
 extern TIM_HandleTypeDef htim4;
 
@@ -18,6 +19,19 @@ typedef struct {
     cmd_type_t type;
     uint16_t value;   // 角度(度) 或 距离(mm)
 } cmd_t;
+
+// 全局参数：默认占空比与时间常数（由 ir_follow 等模块复用）
+#ifndef MOTOR_SPEED
+#define MOTOR_SPEED      60      // 电机PWM占空比（0~100）
+#endif
+
+#ifndef K_FORWARD_TIME
+#define K_FORWARD_TIME   3.5f    // 每毫米所需时间(ms/mm)，需标定
+#endif
+
+#ifndef K_TURN_TIME
+#define K_TURN_TIME      7.5f    // 每度所需时间(ms/deg)，需标定
+#endif
 
 
 #define MotorCalibrationCoeff 0.925f // At 7.8V+
@@ -150,5 +164,17 @@ typedef struct {
         SetMotorSpeedRF((speed_R));                                                                                    \
         SetMotorSpeedRB((speed_R));                                                                                    \
     } while (0)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// 函数封装，供其他模块调用，避免在其编译单元展开 GPIO 宏
+void Motor_SetSpeedLR(int speed_L, int speed_R);
+void Motor_Stop(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
